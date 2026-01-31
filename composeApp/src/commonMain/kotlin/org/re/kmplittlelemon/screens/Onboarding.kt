@@ -1,4 +1,4 @@
-package org.re.kmplittlelemon
+package org.re.kmplittlelemon.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
