@@ -16,6 +16,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,23 +28,36 @@ import androidx.compose.ui.unit.dp
 import littlelemonkmp.composeapp.generated.resources.Res
 import littlelemonkmp.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
+import org.re.kmplittlelemon.KeyValueStore
+import org.re.kmplittlelemon.data.UserPrefsKeys
 import org.re.kmplittlelemon.nav.User
 
 @Composable
 fun ProfileScreen(
-    user: User,
+    store: KeyValueStore,
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onLogout: () -> Unit,
 ) {
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+
+    // load once
+    LaunchedEffect(Unit) {
+        firstName = store.getString(UserPrefsKeys.FIRST_NAME).orEmpty()
+        lastName  = store.getString(UserPrefsKeys.LAST_NAME).orEmpty()
+        email     = store.getString(UserPrefsKeys.EMAIL).orEmpty()
+    }
+
     Column(
         modifier = modifier
             .safeContentPadding()
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Header (logo)
         Image(
             painter = painterResource(Res.drawable.logo),
             contentDescription = "Little Lemon logo",
@@ -49,19 +67,25 @@ fun ProfileScreen(
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text = "Profile",
-            style = MaterialTheme.typography.headlineMedium
+            text = "Profile information:",
+            style = MaterialTheme.typography.headlineSmall
         )
 
         Spacer(Modifier.height(16.dp))
 
-        Text(text = "First name: ${user.firstName}")
-        Text(text = "Last name: ${user.lastName}")
-        Text(text = "Email: ${user.email}")
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "First name: $firstName")
+            Spacer(Modifier.height(8.dp))
+            Text(text = "Last name: $lastName")
+            Spacer(Modifier.height(8.dp))
+            Text(text = "Email: $email")
+        }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.weight(1f))
 
-        OutlinedButton(
+        Button(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -71,10 +95,13 @@ fun ProfileScreen(
         Spacer(Modifier.height(12.dp))
 
         Button(
-            onClick = onLogout,
+            onClick = {
+                store.clear()
+                onLogout()
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Logout")
+            Text("Log out")
         }
     }
 }
@@ -82,11 +109,20 @@ fun ProfileScreen(
 @Preview
 @Composable
 private fun ProfileScreenPreview() {
-    MaterialTheme {
-        ProfileScreen(
-            user = User("Jane", "Doe", "jane@littlelemon.com"),
-            onBack = {},
-            onLogout = {}
+    // preview dummy store (in-memory)
+    val dummy = object : KeyValueStore {
+        private val map = mutableMapOf(
+            UserPrefsKeys.FIRST_NAME to "Jane",
+            UserPrefsKeys.LAST_NAME to "Doe",
+            UserPrefsKeys.EMAIL to "jane@littlelemon.com",
         )
+        override fun putString(key: String, value: String?) { if (value == null) map.remove(key) else map[key] = value }
+        override fun getString(key: String): String? = map[key]
+        override fun remove(key: String) { map.remove(key) }
+        override fun clear() { map.clear() }
+    }
+
+    MaterialTheme {
+        ProfileScreen(store = dummy, onBack = {}, onLogout = {})
     }
 }
