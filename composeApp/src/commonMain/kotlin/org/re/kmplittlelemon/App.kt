@@ -9,10 +9,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import org.re.kmplittlelemon.data.UserPrefsKeys
 import org.re.kmplittlelemon.nav.Screen
-import org.re.kmplittlelemon.nav.User
+import org.re.kmplittlelemon.nav.rememberNavController
 import org.re.kmplittlelemon.screens.HomeScreen
-
 import org.re.kmplittlelemon.screens.OnboardingScreen
 import org.re.kmplittlelemon.screens.ProfileScreen
 
@@ -20,16 +20,14 @@ import org.re.kmplittlelemon.screens.ProfileScreen
 @Preview
 fun App() {
     MaterialTheme {
-        var user by remember { mutableStateOf<User?>(null) }
-        var screen by remember { mutableStateOf<Screen>(Screen.Onboarding) }
+        val store = rememberKeyValueStore()
 
-        // derive what to show:
-        val currentScreen: Screen = if (user == null) {
-            Screen.Onboarding
-        } else {
-            // once registered, never show onboarding unless logout
-            if (screen == Screen.Onboarding) Screen.Home else screen
+        val startScreen = remember {
+            val loggedIn = store.getString(UserPrefsKeys.LOGGED_IN) == "true"
+            if (loggedIn) Screen.Home else Screen.Onboarding
         }
+
+        val navController = rememberNavController(startScreen)
 
         Column(
             modifier = Modifier
@@ -38,25 +36,32 @@ fun App() {
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            when (currentScreen) {
+            when (navController.current) {
                 Screen.Onboarding -> {
                     OnboardingScreen { first, last, email ->
-                        user = User(first, last, email)
-                        screen = Screen.Home
+                        // save to shared prefs
+                        store.putString(UserPrefsKeys.FIRST_NAME, first)
+                        store.putString(UserPrefsKeys.LAST_NAME, last)
+                        store.putString(UserPrefsKeys.EMAIL, email)
+                        store.putString(UserPrefsKeys.LOGGED_IN, "true")
+
+                        navController.reset(Screen.Home)
                     }
                 }
 
                 Screen.Home -> {
-                    HomeScreen(onOpenProfile = { })
+                    HomeScreen(
+                        onOpenProfile = { navController.navigate(Screen.Profile) }
+                    )
                 }
 
                 Screen.Profile -> {
                     ProfileScreen(
-                        user = user!!,
-                        onBack = { screen = Screen.Home },
+                        store = store,
+                        onBack = { navController.popBackStack() },
                         onLogout = {
-                            user = null
-                            screen = Screen.Onboarding
+                            // store.clear() already called inside ProfileScreen
+                            navController.reset(Screen.Onboarding)
                         }
                     )
                 }
