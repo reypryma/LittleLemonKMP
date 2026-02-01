@@ -1,67 +1,72 @@
 package org.re.kmplittlelemon
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.coroutines.launch
+import org.re.kmplittlelemon.connection.createHttpClient
+import org.re.kmplittlelemon.data.MenuRepository
 import org.re.kmplittlelemon.data.UserPrefsKeys
+import org.re.kmplittlelemon.data.rememberDatabase
 import org.re.kmplittlelemon.nav.Screen
-import org.re.kmplittlelemon.nav.rememberNavController
+import org.re.kmplittlelemon.nav.User
 import org.re.kmplittlelemon.screens.HomeScreen
 import org.re.kmplittlelemon.screens.OnboardingScreen
 import org.re.kmplittlelemon.screens.ProfileScreen
+
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        val store = rememberKeyValueStore()
+        MaterialTheme {
+            val db = rememberDatabase()
+            val client = remember { createHttpClient() }
+            val repo = remember { MenuRepository(db.menuItemDao(), client) }
+            val store = rememberKeyValueStore()
 
-        val startScreen = remember {
-            val loggedIn = store.getString(UserPrefsKeys.LOGGED_IN) == "true"
-            if (loggedIn) Screen.Home else Screen.Onboarding
-        }
+            val menuItems by db.menuItemDao().getAll().collectAsState(emptyList())
 
-        val navController = rememberNavController(startScreen)
+            LaunchedEffect(Unit) { repo.refreshIfEmpty() }
 
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            when (navController.current) {
+            // ✅ read login status once (and keep in memory while app runs)
+            var isLoggedIn by remember {
+                mutableStateOf(store.getString(UserPrefsKeys.LOGGED_IN) == "true")
+            }
+
+            // ✅ only used when logged in (Home/Profile)
+            var screen by remember { mutableStateOf<Screen>(Screen.Home) }
+
+            val currentScreen: Screen = if (!isLoggedIn) Screen.Onboarding else screen
+
+            when (currentScreen) {
                 Screen.Onboarding -> {
                     OnboardingScreen { first, last, email ->
-                        // save to shared prefs
                         store.putString(UserPrefsKeys.FIRST_NAME, first)
                         store.putString(UserPrefsKeys.LAST_NAME, last)
                         store.putString(UserPrefsKeys.EMAIL, email)
                         store.putString(UserPrefsKeys.LOGGED_IN, "true")
 
-                        navController.reset(Screen.Home)
+                        isLoggedIn = true
+                        screen = Screen.Home
                     }
                 }
 
                 Screen.Home -> {
                     HomeScreen(
-                        onOpenProfile = { navController.navigate(Screen.Profile) }
+                        menuItems = menuItems,
+                        onOpenProfile = { screen = Screen.Profile }
                     )
                 }
 
                 Screen.Profile -> {
                     ProfileScreen(
                         store = store,
-                        onBack = { navController.popBackStack() },
+                        onBack = { screen = Screen.Home },
                         onLogout = {
-                            // store.clear() already called inside ProfileScreen
-                            navController.reset(Screen.Onboarding)
+                            store.clear()
+                            isLoggedIn = false
+                            screen = Screen.Home
                         }
                     )
                 }
