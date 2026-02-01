@@ -23,12 +23,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import littlelemonkmp.composeapp.generated.resources.Res
 import littlelemonkmp.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
+import org.re.kmplittlelemon.ui.components.LLPrimaryButton
+import org.re.kmplittlelemon.ui.components.LLTextField
+
+private fun isValidEmail(input: String): Boolean {
+    val email = input.trim()
+    if (email.isEmpty()) return false
+    // Simple, practical email validation (works well for onboarding forms)
+    val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    return regex.matches(email)
+}
 
 @Composable
 fun OnboardingScreen(
@@ -39,7 +50,14 @@ fun OnboardingScreen(
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
 
-    val canRegister = firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank()
+    // Show email error only after user starts typing / leaves blank
+    val emailTouched = remember(email) { email.isNotEmpty() }
+    val emailValid = remember(email) { isValidEmail(email) }
+    val emailErrorText = if (emailTouched && !emailValid) "Please enter a valid email address" else null
+
+    val canRegister = firstName.isNotBlank() &&
+            lastName.isNotBlank() &&
+            emailValid
 
     Column(
         modifier = modifier
@@ -49,7 +67,6 @@ fun OnboardingScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Header (logo)
         Image(
             painter = painterResource(Res.drawable.logo),
             contentDescription = "Little Lemon logo",
@@ -65,50 +82,44 @@ fun OnboardingScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        TextField(
+        LLTextField(
             value = firstName,
             onValueChange = { firstName = it },
-            label = { Text("First name") },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp)
+            label = "First name",
         )
 
-        TextField(
+        Spacer(Modifier.height(12.dp))
+
+        LLTextField(
             value = lastName,
             onValueChange = { lastName = it },
-            label = { Text("Last name") },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp)
+            label = "Last name",
         )
 
-        TextField(
+        Spacer(Modifier.height(12.dp))
+
+        LLTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = "Email",
+            placeholder = "name@example.com",
+            isError = emailErrorText != null,
+            supportingText = emailErrorText,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Done
+            ),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 20.dp)
         )
 
-        Button(
+        Spacer(Modifier.height(20.dp))
+
+        LLPrimaryButton(
             onClick = { onRegister(firstName.trim(), lastName.trim(), email.trim()) },
             enabled = canRegister,
-        ) {
-            Text("Register")
-        }
+            text = "Register",
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
-@Preview
-@Composable
-private fun OnboardingScreenPreview() {
-    MaterialTheme {
-        OnboardingScreen()
-    }
-}
