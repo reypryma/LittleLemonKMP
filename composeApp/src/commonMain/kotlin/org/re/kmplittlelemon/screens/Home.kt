@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import littlelemonkmp.composeapp.generated.resources.logo
 import littlelemonkmp.composeapp.generated.resources.profile
 import org.jetbrains.compose.resources.painterResource
 import org.re.kmplittlelemon.data.MenuItemEntity
+import org.re.kmplittlelemon.ui.components.LLTextField
 import kotlin.math.round
 
 @Composable
@@ -121,12 +123,11 @@ fun HomeScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    TextField(
+                    LLTextField(
                         value = searchPhrase,
                         onValueChange = { searchPhrase = it },
-                        placeholder = { Text("Enter search phrase") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        label = "Search",
+                        placeholder = "Enter search phrase"
                     )
                 }
             }
@@ -173,7 +174,7 @@ fun HomeScreen(
         // ✅ Menu items list
         items(filteredItems, key = { it.id }) { item ->
             MenuItemRow(item)
-            Divider()
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
         }
     }
 }

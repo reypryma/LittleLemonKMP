@@ -13,13 +13,14 @@ import org.re.kmplittlelemon.nav.User
 import org.re.kmplittlelemon.screens.HomeScreen
 import org.re.kmplittlelemon.screens.OnboardingScreen
 import org.re.kmplittlelemon.screens.ProfileScreen
+import org.re.kmplittlelemon.ui.theme.LittleLemonTheme
 
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
-        MaterialTheme {
+    LittleLemonTheme {
+
             val db = rememberDatabase()
             val client = remember { createHttpClient() }
             val repo = remember { MenuRepository(db.menuItemDao(), client) }
@@ -72,5 +73,5 @@ fun App() {
                 }
             }
         }
-    }
+
 }
