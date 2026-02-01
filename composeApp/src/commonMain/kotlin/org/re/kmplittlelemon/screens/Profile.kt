@@ -31,6 +31,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.re.kmplittlelemon.KeyValueStore
 import org.re.kmplittlelemon.data.UserPrefsKeys
 import org.re.kmplittlelemon.nav.User
+import org.re.kmplittlelemon.rememberKeyValueStore
 
 @Composable
 fun ProfileScreen(
